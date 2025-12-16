@@ -10,9 +10,9 @@ export default function Home() {
   const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS!;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       <Header />
-      <main className="container mx-auto p-8 pt-20">
+      <main className="container mx-auto p-8 pt-20 flex-grow">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           <div className="border p-6 rounded-lg bg-gray-800/50">
             <h2 className="text-xl font-semibold mb-4">Déposer</h2>
