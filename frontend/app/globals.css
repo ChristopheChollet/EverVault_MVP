@@ -1,9 +1,11 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Styles personnalisés (optionnels) */
+/* Styles personnalisés */
 body {
-  background-color: #0f172a; /* Fond sombre */
-  color: #ffffff; /* Texte blanc */
+  background-color: #0f172a;
+  color: #ffffff;
 }
 
 .btn-primary {
@@ -11,6 +13,5 @@ body {
 }
 
 .card {
-  @apply bg-gray-800 border-gray-700 rounded-lg;
-  @apply border border-gray-700 rounded-lg shadow-sm;
+  @apply bg-gray-800 border border-gray-700 rounded-lg shadow-sm;
 }
