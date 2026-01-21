@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* Styles personnalisés */
 body {
@@ -9,9 +7,9 @@ body {
 }
 
 .btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white;
+  @apply text-white bg-blue-600 hover:bg-blue-700;
 }
 
 .card {
-  @apply bg-gray-800 border border-gray-700 rounded-lg shadow-sm;
+  @apply bg-gray-800 rounded-lg border border-gray-700 shadow-sm;
 }

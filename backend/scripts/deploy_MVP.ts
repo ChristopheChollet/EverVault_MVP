@@ -10,13 +10,13 @@ async function main() {
   const USDC_ADDRESS = "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238";
   console.log("USDC Address:", USDC_ADDRESS);
 
-  const EverVaultSimple = await ethers.getContractFactory("EverVaultSimple");
-  const vault = await EverVaultSimple.deploy(USDC_ADDRESS);
+  const GreenVaultSimple = await ethers.getContractFactory("GreenVaultSimple");
+  const vault = await GreenVaultSimple.deploy(USDC_ADDRESS);
   await vault.waitForDeployment();
   
   const contractAddress = await vault.getAddress();
   console.log("");
-  console.log("✅ EverVaultSimple déployé à:", contractAddress);
+  console.log("✅ GreenVaultSimple déployé à:", contractAddress);
   console.log("");
   console.log("Mettez à jour votre .env avec:");
   console.log(`NEXT_PUBLIC_CONTRACT_ADDRESS=${contractAddress}`);

@@ -5,18 +5,27 @@ import { contractAbi } from "@/constants";
 import { formatUnits } from "viem";
 import { DollarSign, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useChainId } from "wagmi";
+import { getVaultAddress } from "@/constants/addresses";
 
-export default function TVLDisplay({ contractAddress }: { contractAddress: string }) {
+export default function TVLDisplay() {
+  const chainId = useChainId();
+  const contractAddress = getVaultAddress(chainId);
+
   const { data: tvl, isLoading, error, refetch, isRefetching } = useReadContract({
-    address: contractAddress as `0x${string}`,
+    address: contractAddress,
     abi: contractAbi,
     functionName: "totalValueLocked",
     query: {
+      enabled: Boolean(contractAddress),
       refetchInterval: 10000, // Rafraîchit toutes les 10 secondes
       staleTime: 5000, // Considère les données comme "fraîches" pendant 5s
     },
   });
 
+  if (!contractAddress) {
+    return <p className="text-gray-400">Sélectionne un réseau supporté (Sepolia / Base Sepolia).</p>;
+  }
   if (isLoading) return <p className="text-gray-400">Chargement du TVL...</p>;
   if (error) return <p className="text-red-500">Erreur: {error.message}</p>;
 

@@ -6,10 +6,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
-/// @title EverVaultSimple - Version simplifiée pour tests
-/// @notice Un vault simple qui accepte des dépôts USDC et émet des parts
-contract EverVaultSimple is ERC20, ReentrancyGuard, Ownable {
+/// @title GreenVaultSimple - MVP Sepolia (sans stratégie)
+/// @notice Vault simple qui accepte des dépôts USDC et émet des parts
+contract GreenVaultSimple is ERC20, ReentrancyGuard, Ownable, Pausable {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable USDC;
@@ -21,20 +22,22 @@ contract EverVaultSimple is ERC20, ReentrancyGuard, Ownable {
 
     event Deposited(address indexed user, uint256 usdcAmount, uint256 shares);
     event Withdrawn(address indexed user, uint256 shares, uint256 usdcAmount);
+    event FeeRecipientUpdated(address indexed oldRecipient, address indexed newRecipient);
 
     error ZeroAmount();
     error InsufficientShares();
     error InsufficientBalance();
+    error ZeroAddress();
 
-    constructor(address _usdc) ERC20("EverVault Shares", "evUSDC") Ownable(msg.sender) {
-        require(_usdc != address(0), "Invalid USDC address");
+    constructor(address _usdc) ERC20("GreenVault Shares", "gvUSDC") Ownable(msg.sender) {
+        if (_usdc == address(0)) revert ZeroAddress();
         USDC = IERC20(_usdc);
         feeRecipient = msg.sender;
     }
 
     /// @notice Dépose des USDC et reçoit des parts
     /// @param usdcAmount Montant d'USDC à déposer (6 décimales)
-    function deposit(uint256 usdcAmount) external nonReentrant returns (uint256) {
+    function deposit(uint256 usdcAmount) external nonReentrant whenNotPaused returns (uint256) {
         if (usdcAmount == 0) revert ZeroAmount();
 
         // Calcule les parts à émettre (1:1 pour la simplicité)
@@ -55,7 +58,7 @@ contract EverVaultSimple is ERC20, ReentrancyGuard, Ownable {
 
     /// @notice Retire des parts et récupère des USDC
     /// @param shares Nombre de parts à brûler
-    function withdraw(uint256 shares) external nonReentrant returns (uint256) {
+    function withdraw(uint256 shares) external nonReentrant whenNotPaused returns (uint256) {
         if (shares == 0) revert ZeroAmount();
         if (balanceOf(msg.sender) < shares) revert InsufficientShares();
 
@@ -90,8 +93,19 @@ contract EverVaultSimple is ERC20, ReentrancyGuard, Ownable {
 
     /// @notice Met à jour le destinataire des frais
     function setFeeRecipient(address _recipient) external onlyOwner {
-        require(_recipient != address(0), "Invalid address");
+        if (_recipient == address(0)) revert ZeroAddress();
+        emit FeeRecipientUpdated(feeRecipient, _recipient);
         feeRecipient = _recipient;
+    }
+
+    /// @notice Stoppe les dépôts/retraits (guardian)
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Réactive les dépôts/retraits
+    function unpause() external onlyOwner {
+        _unpause();
     }
 }
 

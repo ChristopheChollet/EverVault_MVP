@@ -7,10 +7,9 @@ import { contractAbi } from "@/constants";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAccount } from "wagmi";
-import { parseUnits, getAddress } from "viem";
-
-// Adresse USDC sur Sepolia (Circle officiel)
-const USDC_ADDRESS = getAddress("0x1c7D4B196Cb0C7b01d743Fbc6116a902379C7238");
+import { formatUnits, parseUnits } from "viem";
+import { useChainId } from "wagmi";
+import { getVaultAddress } from "@/constants/addresses";
 
 // ABI minimal pour approve et allowance
 const erc20Abi = [
@@ -33,30 +32,74 @@ const erc20Abi = [
     outputs: [{ type: "uint256" }],
     stateMutability: "view",
     type: "function"
+  },
+  {
+    inputs: [{ name: "account", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ type: "uint256" }],
+    stateMutability: "view",
+    type: "function"
   }
 ] as const;
 
-export default function DepositForm({ contractAddress }: { contractAddress: string }) {
+function txUrl(chainId: number, hash: string) {
+  if (chainId === 11155111) return `https://sepolia.etherscan.io/tx/${hash}`;
+  if (chainId === 84532) return `https://sepolia.basescan.org/tx/${hash}`;
+  return undefined;
+}
+
+export default function DepositForm() {
   const [amount, setAmount] = useState("");
   const { address } = useAccount();
+  const chainId = useChainId();
+  const contractAddress = getVaultAddress(chainId);
   const { data: hash, isPending, writeContract, error: writeError } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
+  // Read USDC address directly from the vault contract (avoids hardcoding per-chain USDC)
+  const { data: usdcAddress } = useReadContract({
+    address: contractAddress,
+    abi: contractAbi,
+    functionName: "USDC",
+    query: { enabled: Boolean(contractAddress) },
+  });
+
+  const { data: usdcBalance } = useReadContract({
+    address: usdcAddress as `0x${string}` | undefined,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: address && usdcAddress ? [address] : undefined,
+    query: { enabled: Boolean(address && usdcAddress) },
+  });
+
   // Vérifie l'allowance actuelle
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: USDC_ADDRESS,
+    address: usdcAddress as `0x${string}` | undefined,
     abi: erc20Abi,
     functionName: "allowance",
-    args: address ? [address, contractAddress as `0x${string}`] : undefined,
+    args: address && contractAddress ? [address, contractAddress] : undefined,
+    query: { enabled: Boolean(address && contractAddress && usdcAddress) },
   });
 
   // Rafraîchit l'allowance après une transaction réussie
   useEffect(() => {
     if (isSuccess) {
-      toast.success("Transaction réussie !");
+      const href = hash ? txUrl(chainId, hash) : undefined;
+      toast.success(
+        href ? (
+          <span>
+            Transaction confirmée —{" "}
+            <a className="underline" href={href} target="_blank" rel="noreferrer">
+              voir sur l’explorer
+            </a>
+          </span>
+        ) : (
+          "Transaction confirmée"
+        )
+      );
       refetchAllowance();
     }
-  }, [isSuccess, refetchAllowance]);
+  }, [isSuccess, refetchAllowance, hash, chainId]);
 
   // Calcule le montant en wei (6 décimales pour USDC)
   const amountInWei = amount ? parseUnits(amount, 6) : BigInt(0);
@@ -67,20 +110,13 @@ export default function DepositForm({ contractAddress }: { contractAddress: stri
   // Affiche les erreurs
   useEffect(() => {
     if (writeError) {
-      console.error("Erreur writeContract:", writeError);
       toast.error(`Erreur: ${writeError.message}`);
     }
   }, [writeError]);
 
   // Fonction pour approuver
   const handleApprove = () => {
-    console.log("handleApprove appelé");
-    console.log("address:", address);
-    console.log("amount:", amount);
-    console.log("contractAddress:", contractAddress);
-    console.log("amountInWei:", amountInWei.toString());
-    
-    if (!amount || !address) {
+    if (!amount || !address || !contractAddress || !usdcAddress) {
       toast.error("Montant ou adresse manquant");
       return;
     }
@@ -88,18 +124,16 @@ export default function DepositForm({ contractAddress }: { contractAddress: stri
     toast.info("Envoi de la transaction d'approbation...");
     
     writeContract({
-      address: USDC_ADDRESS,
+      address: usdcAddress as `0x${string}`,
       abi: erc20Abi,
       functionName: "approve",
-      args: [contractAddress as `0x${string}`, amountInWei],
+      args: [contractAddress, amountInWei],
     } as any);
   };
 
   // Fonction pour déposer
   const handleDeposit = () => {
-    console.log("handleDeposit appelé");
-    
-    if (!amount || !address) {
+    if (!amount || !address || !contractAddress) {
       toast.error("Montant ou adresse manquant");
       return;
     }
@@ -107,29 +141,45 @@ export default function DepositForm({ contractAddress }: { contractAddress: stri
     toast.info("Envoi de la transaction de dépôt...");
     
     writeContract({
-      address: contractAddress as `0x${string}`,
+      address: contractAddress,
       abi: contractAbi,
       functionName: "deposit",
       args: [amountInWei],
     } as any);
   };
 
+  const balanceFormatted = usdcBalance ? formatUnits(usdcBalance as bigint, 6) : "0";
+  const allowanceFormatted = allowance ? formatUnits(allowance as bigint, 6) : "0";
+
   return (
     <div className="space-y-4">
+      {!contractAddress && (
+        <p className="text-sm text-gray-400">Sélectionne un réseau supporté (Sepolia / Base Sepolia).</p>
+      )}
       <Input
         type="number"
         placeholder="Montant en USDC"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
         disabled={isPending || isConfirming}
-        className="w-full px-3 py-2 border rounded-md bg-gray-800"
+        className="px-3 py-2 w-full bg-gray-800 rounded-md border"
       />
       
-      {/* Affiche l'allowance actuelle pour debug */}
-      <div className="text-xs text-gray-400 space-y-1">
-        <p>Allowance actuelle: {allowance ? (Number(allowance) / 1e6).toFixed(2) : "0"} USDC</p>
-        <p>Wallet connecté: {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Non connecté"}</p>
-        <p>Contrat cible: {contractAddress ? `${contractAddress.slice(0, 6)}...${contractAddress.slice(-4)}` : "Non défini"}</p>
+      <div className="flex justify-between items-center text-xs text-gray-400">
+        <div className="space-y-1">
+          <p>Solde USDC: <span className="text-gray-300">{balanceFormatted}</span></p>
+          <p>Allowance: <span className="text-gray-300">{allowanceFormatted}</span></p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          type="button"
+          onClick={() => setAmount(balanceFormatted)}
+          disabled={!usdcBalance || isPending || isConfirming}
+          className="px-2 h-7 text-xs"
+        >
+          Max
+        </Button>
       </div>
 
       {/* Bouton Approuver si nécessaire */}
@@ -138,7 +188,7 @@ export default function DepositForm({ contractAddress }: { contractAddress: stri
           variant="default"
           size="default"
           onClick={handleApprove}
-          disabled={isPending || isConfirming || !amount}
+          disabled={isPending || isConfirming || !amount || !contractAddress || !usdcAddress}
           className="w-full bg-purple-600 hover:bg-purple-700"
         >
           {isPending ? "Approbation..." : "1. Approuver USDC"}
@@ -150,7 +200,7 @@ export default function DepositForm({ contractAddress }: { contractAddress: stri
         variant="default"
         size="default"
         onClick={handleDeposit}
-        disabled={isPending || isConfirming || !amount || needsApproval}
+        disabled={isPending || isConfirming || !amount || needsApproval || !contractAddress}
         className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
       >
         {isPending ? "En attente..." : isConfirming ? "Confirmation..." : needsApproval ? "2. Déposer (approuver d'abord)" : "Déposer"}

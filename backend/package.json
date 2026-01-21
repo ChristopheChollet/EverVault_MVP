@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "test": "hardhat test",
+    "deploy:mvp:sepolia": "hardhat run scripts/deploy_MVP.ts --network sepolia",
+    "deploy:aave:sepolia": "hardhat run scripts/deploy.ts --network sepolia"
+  },
   "dependencies": {
     "@aave/core-v3": "^1.19.3",
     "@openzeppelin/contracts": "^5.4.0",
