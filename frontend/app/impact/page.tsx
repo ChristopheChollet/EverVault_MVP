@@ -193,11 +193,21 @@ export default function ImpactPage() {
               <h3 className="font-semibold">Fees (graph)</h3>
               <p className="text-xs text-gray-500">Cumul des fees (Withdrawn) vs blocks</p>
             </div>
+            <div className="flex flex-wrap gap-2 items-baseline">
+              <p className="text-3xl font-semibold text-white">
+                {formatUsdc(totalFeesWei, 4)}
+              </p>
+              <p className="text-sm text-gray-400">USDC — fees estimés (fenêtre scannée)</p>
+            </div>
             {chartPoints.length < 2 ? (
               <p className="text-sm text-gray-400">Pas assez de données pour tracer un graphique (fais un withdraw).</p>
             ) : (
               <ImpactFeesChart points={chartPoints} />
             )}
+            <p className="text-xs text-gray-500">
+              Légende: cumul des fees (events <span className="text-gray-400">Withdrawn</span>) sur la fenêtre{" "}
+              <span className="text-gray-400">Scan last</span> (par défaut {lookbackBlocks.toLocaleString()} blocs).
+            </p>
           </div>
         )}
 

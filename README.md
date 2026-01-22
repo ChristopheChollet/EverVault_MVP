@@ -116,6 +116,17 @@ Puis mets l’adresse affichée dans le front (`NEXT_PUBLIC_VAULT_ADDRESS_SEPOLI
 
 ---
 
+## 🌍 Page Impact
+
+La page **`/impact`** (frontend) sert de “fil rouge” entre:
+- la **treasury** du vault (destinataire des fees),
+- la future **DAO** (gouvernance de la treasury),
+- et le futur **RECs registry** (preuve d’impact).
+
+Elle affiche la **treasury (feeRecipient)** et une estimation des **fees** basée sur les events `Withdrawn` dans la fenêtre scannée.
+
+---
+
 ## 🔐 Security notes / assumptions (MVP)
 
 - **Non-audité**: ce projet est un MVP portfolio (pas prêt pour mainnet / fonds réels).

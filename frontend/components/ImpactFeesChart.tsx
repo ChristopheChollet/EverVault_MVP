@@ -38,19 +38,26 @@ export function ImpactFeesChart({ points }: { points: Point[] }) {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: (ctx: any) => ` ${ctx.parsed.y.toFixed(4)} USDC`,
+          label: (ctx: any) => ` ${Number(ctx.parsed.y).toFixed(4)} USDC`,
         },
       },
     },
     scales: {
       x: {
-        ticks: { color: "rgba(156, 163, 175, 1)", maxTicksLimit: 6 }, // gray-400
+        ticks: {
+          color: "rgba(156, 163, 175, 1)",
+          maxTicksLimit: 6,
+          callback: (v: any, i: number) => {
+            const label = (points[i]?.label ?? "").replace("…", "");
+            return label ? `#${label}` : "";
+          },
+        }, // gray-400
         grid: { color: "rgba(55, 65, 81, 0.6)" }, // gray-700
       },
       y: {
         ticks: {
           color: "rgba(156, 163, 175, 1)",
-          callback: (v: any) => Number(v).toFixed(2),
+          callback: (v: any) => Number(v).toFixed(3),
         },
         grid: { color: "rgba(55, 65, 81, 0.6)" },
       },
