@@ -5,6 +5,7 @@ import { contractAbi } from "@/constants";
 import { getVaultAddress, isSupportedChainId } from "@/constants/addresses";
 import { formatUnits } from "viem";
 import { useEffect, useMemo, useState } from "react";
+import { ExplorerAddress } from "@/components/ExplorerAddress";
 
 type VaultEvent = {
   chainId: number;
@@ -25,10 +26,6 @@ function txUrl(chainId: number, hash: string) {
 function formatUsdc(valueWei: bigint, decimals = 2) {
   const n = Number(formatUnits(valueWei, 6));
   return n.toFixed(decimals);
-}
-
-function shortAddr(a: `0x${string}`) {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
 }
 
 export default function Dashboard() {
@@ -145,7 +142,8 @@ export default function Dashboard() {
         <div>
           <h2 className="text-2xl font-semibold">Dashboard</h2>
           <p className="text-sm text-gray-400">
-            Vault: {shortAddr(vaultAddress)} (chain {chainId})
+            Vault: <ExplorerAddress chainId={chainId} address={vaultAddress} />{" "}
+            <span className="text-gray-500">(chain {chainId})</span>
           </p>
         </div>
       </div>
@@ -174,15 +172,11 @@ export default function Dashboard() {
           <div>
             <p className="text-sm text-gray-400">Treasury (fee recipient)</p>
             <p className="text-sm">
-              {feeRecipient ? (
-                <span className="text-gray-200">{shortAddr(feeRecipient as `0x${string}`)}</span>
-              ) : (
-                <span className="text-gray-500">—</span>
-              )}
+              {feeRecipient ? <ExplorerAddress chainId={chainId} address={feeRecipient as `0x${string}`} /> : "—"}
             </p>
           </div>
           <div>
-            <p className="text-sm text-gray-400">Fees cumulés (sur la fenêtre scannée)</p>
+            <p className="text-sm text-gray-400">Fees estimés (sur la fenêtre scannée)</p>
             <p className="text-sm text-gray-200">
               {formatUsdc(totalFeesWei, 4)} <span className="text-gray-400">USDC</span>
             </p>
@@ -195,8 +189,9 @@ export default function Dashboard() {
           </div>
         </div>
         <p className="mt-3 text-xs text-gray-500">
-          Note: “fees cumulés” = somme de <span className="text-gray-400">shares - usdcAmount</span> sur les events{" "}
-          <span className="text-gray-400">Withdrawn</span> trouvés dans la plage scannée.
+          Note: “fees estimés” = somme de <span className="text-gray-400">shares - usdcAmount</span> sur les events{" "}
+          <span className="text-gray-400">Withdrawn</span> trouvés dans la plage scannée (champ{" "}
+          <span className="text-gray-400">Scan last</span>).
         </p>
       </div>
 
