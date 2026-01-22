@@ -15,6 +15,9 @@ export default function Header() {
           <Link href="/dashboard" className="hover:text-white">
             Dashboard
           </Link>
+          <Link href="/impact" className="hover:text-white">
+            Impact
+          </Link>
         </nav>
       </div>
       <ConnectButton />
